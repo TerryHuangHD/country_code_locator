@@ -1,6 +1,6 @@
 name: country_code_locator
-description: Offline WGS 84 coordinate to strict ISO 3166-1 Alpha-2 country code lookup for Flutter.
-version: 1.0.0
+description: Offline WGS 84 coordinate to official ISO 3166-1 Alpha-2 or Alpha-3 country code lookup for Flutter.
+version: 1.1.0
 homepage: https://github.com/TerryHuangHD/country_code_locator
 repository: https://github.com/TerryHuangHD/country_code_locator
 issue_tracker: https://github.com/TerryHuangHD/country_code_locator/issues

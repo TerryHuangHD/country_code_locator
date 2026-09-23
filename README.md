@@ -4,8 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 Offline WGS 84 coordinate-to-country-code lookup for Flutter. The package loads
-a bundled, versioned boundary index once and then returns a strict, officially
-assigned ISO 3166-1 Alpha-2 code synchronously—without network access, GPS,
+a bundled, versioned boundary index once and then returns an officially assigned
+ISO 3166-1 Alpha-2 or Alpha-3 code synchronously—without network access, GPS,
 permissions, a platform geocoder, or a map-service SDK.
 
 ## Features
@@ -15,7 +15,7 @@ permissions, a platform geocoder, or a map-service SDK.
 - Pure Dart spatial grid, bounding-box, and point-in-polygon implementation.
 - Polygon, MultiPolygon, holes, islands, and antimeridian support.
 - Deterministic shared-boundary handling independent of source row order.
-- Strict official ISO Alpha-2 filtering; placeholders and `XK` never escape.
+- Strict official ISO Alpha-2/Alpha-3 pairs; placeholders and `XK` never escape.
 - Validated binary data with format versioning, lengths, semantic checks, and
   CRC-32 integrity protection.
 - Reproducible, checksum-pinned Natural Earth data pipeline.
@@ -38,16 +38,24 @@ import 'package:country_code_locator/country_code_locator.dart';
 
 final locator = await OfflineCountryCode.load();
 
-final code = locator.lookup(
+final alpha2 = locator.lookup(
   latitude: 35.6812,
   longitude: 139.7671,
-);
+); // JP (default)
 
-print(code); // JP
+final alpha3 = locator.lookup(
+  latitude: 35.6812,
+  longitude: 139.7671,
+  format: CountryCodeFormat.alpha3,
+); // JPN
 ```
 
 `lookup` returns `null` for ocean, uncovered or uncoded land, and a point that
 matches different codes on a shared boundary.
+
+Select `CountryCodeFormat.alpha2` or `CountryCodeFormat.alpha3` per lookup. Both
+formats share the same loaded geometry and boundary decisions; the default
+remains Alpha-2.
 
 ### Input validation
 
@@ -72,7 +80,7 @@ is also available for a custom Flutter `AssetBundle`.
 
 | Situation | Result |
 | --- | --- |
-| Point inside one officially coded land polygon | That uppercase Alpha-2 code |
+| Point inside one officially coded land polygon | That uppercase official Alpha-2 or Alpha-3 code, according to `format` |
 | Multiple matching polygons with the same code | That code |
 | Boundary shared by different codes | `null` |
 | Ocean or data gap | `null` |
@@ -100,11 +108,12 @@ The library source is MIT licensed.
 
 ## Performance
 
-The asset is **2,570,639 bytes (2.45 MiB)**. A reference profile-mode run on a
-physical Pixel 10 measured 55.345 ms cold load, 8.875 µs average warm lookup,
-and a 13.50 MiB process-wide peak-RSS delta. These are measurements, not service
-level guarantees; application, device, build mode, and workload matter. Full
-methodology and reproduction guidance are in [PERFORMANCE.md](doc/PERFORMANCE.md).
+The 1.0.0 asset was **2,570,639 bytes (2.45 MiB)**. A 1.0.0 reference
+profile-mode run on a physical Pixel 10 measured 55.345 ms cold load,
+8.875 µs average warm lookup, and a 13.50 MiB process-wide peak-RSS delta.
+These are historical measurements, not 1.1.0 performance claims or service
+level guarantees. Repeat the benchmark for the updated asset before publishing;
+see [PERFORMANCE.md](doc/PERFORMANCE.md).
 
 Runtime lookup consults a 2° spatial grid before polygon and ring bounds. It
 does not scan every global polygon, reparse the asset, or copy the geometry per

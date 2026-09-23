@@ -28,6 +28,7 @@ class LookupPage extends StatefulWidget {
 class _LookupPageState extends State<LookupPage> {
   final _latitudeController = TextEditingController(text: '35.6812');
   final _longitudeController = TextEditingController(text: '139.7671');
+  CountryCodeFormat _format = CountryCodeFormat.alpha2;
 
   OfflineCountryCode? _locator;
   String _message = 'Loading bundled boundaries…';
@@ -69,7 +70,11 @@ class _LookupPageState extends State<LookupPage> {
       return;
     }
     try {
-      final code = locator.lookup(latitude: latitude, longitude: longitude);
+      final code = locator.lookup(
+        latitude: latitude,
+        longitude: longitude,
+        format: _format,
+      );
       setState(() => _message = code ?? 'No unambiguous land code');
     } on ArgumentError catch (error) {
       setState(() => _message = error.message.toString());
@@ -119,6 +124,24 @@ class _LookupPageState extends State<LookupPage> {
                     signed: true,
                   ),
                   onSubmitted: (_) => _lookup(),
+                ),
+                const SizedBox(height: 16),
+                SegmentedButton<CountryCodeFormat>(
+                  segments: const <ButtonSegment<CountryCodeFormat>>[
+                    ButtonSegment(
+                      value: CountryCodeFormat.alpha2,
+                      label: Text('Alpha-2'),
+                    ),
+                    ButtonSegment(
+                      value: CountryCodeFormat.alpha3,
+                      label: Text('Alpha-3'),
+                    ),
+                  ],
+                  selected: <CountryCodeFormat>{_format},
+                  onSelectionChanged: (selected) {
+                    setState(() => _format = selected.first);
+                    if (_locator != null) _lookup();
+                  },
                 ),
                 const SizedBox(height: 16),
                 FilledButton(

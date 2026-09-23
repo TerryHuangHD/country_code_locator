@@ -9,12 +9,16 @@ const int _headerLength = 80;
 const int _polygonRecordLength = 28;
 const int _ringRecordLength = 24;
 const int _nullCodeIndex = 0xffff;
-const int _supportedFormatVersion = 1;
+const int _supportedFormatVersion = 2;
 const List<int> _magic = <int>[67, 67, 76, 79, 67, 65, 84, 82];
+
+/// The ISO 3166-1 code representation returned by a lookup.
+enum CountryCodeFormat { alpha2, alpha3 }
 
 final class CountryData {
   CountryData._({
     required this.codes,
+    required this.alpha3Codes,
     required List<_Polygon> polygons,
     required List<_Ring> rings,
     required this.pointLongitudes,
@@ -31,6 +35,7 @@ final class CountryData {
       _CountryDataParser(bytes).parse();
 
   final List<String> codes;
+  final List<String> alpha3Codes;
   final List<_Polygon> _polygons;
   final List<_Ring> _rings;
   final Int32List pointLongitudes;
@@ -41,7 +46,11 @@ final class CountryData {
   final int gridWidth;
   final int gridHeight;
 
-  String? lookup({required double latitude, required double longitude}) {
+  String? lookup({
+    required double latitude,
+    required double longitude,
+    CountryCodeFormat format = CountryCodeFormat.alpha2,
+  }) {
     if (!latitude.isFinite || latitude < -90 || latitude > 90) {
       throw ArgumentError.value(
         latitude,
@@ -69,7 +78,7 @@ final class CountryData {
     row = row.clamp(0, gridHeight - 1);
     final cell = row * gridWidth + column;
 
-    String? matchedCode;
+    var matchedCodeIndex = -1;
     var ambiguous = false;
     var uncodedHit = false;
     for (var reference = cellOffsets[cell];
@@ -95,14 +104,19 @@ final class CountryData {
         uncodedHit = true;
         continue;
       }
-      final code = codes[polygon.codeIndex];
-      if (matchedCode == null) {
-        matchedCode = code;
-      } else if (matchedCode != code) {
+      if (matchedCodeIndex < 0) {
+        matchedCodeIndex = polygon.codeIndex;
+      } else if (matchedCodeIndex != polygon.codeIndex) {
         ambiguous = true;
       }
     }
-    return ambiguous || uncodedHit ? null : matchedCode;
+    if (ambiguous || uncodedHit || matchedCodeIndex < 0) {
+      return null;
+    }
+    return switch (format) {
+      CountryCodeFormat.alpha2 => codes[matchedCodeIndex],
+      CountryCodeFormat.alpha3 => alpha3Codes[matchedCodeIndex],
+    };
   }
 
   bool _polygonContains(_Polygon polygon, int x, int y) {
@@ -257,7 +271,7 @@ final class _CountryDataParser {
     }
 
     final cellCount = gridWidth * gridHeight;
-    final expectedPolygonsOffset = _headerLength + codeCount * 2;
+    final expectedPolygonsOffset = _headerLength + codeCount * 5;
     final expectedRingsOffset =
         expectedPolygonsOffset + polygonCount * _polygonRecordLength;
     final expectedPointsOffset =
@@ -278,7 +292,7 @@ final class _CountryDataParser {
       _invalid('Country boundary section offsets are inconsistent');
     }
 
-    final codes = _parseCodes(codesOffset, codeCount);
+    final codeTable = _parseCodes(codesOffset, codeCount);
     final rawPolygons = _parsePolygons(
       polygonsOffset,
       polygonCount,
@@ -323,7 +337,8 @@ final class _CountryDataParser {
       formatVersion: formatVersion,
       scale: scale,
       gridCells: cellCount,
-      codes: codes,
+      codes: codeTable.alpha2,
+      alpha3Codes: codeTable.alpha3,
       polygonCount: polygonCount,
       ringCount: ringCount,
       pointCount: pointCount,
@@ -331,7 +346,8 @@ final class _CountryDataParser {
     );
 
     return CountryData._(
-      codes: List<String>.unmodifiable(codes),
+      codes: List<String>.unmodifiable(codeTable.alpha2),
+      alpha3Codes: List<String>.unmodifiable(codeTable.alpha3),
       polygons: List<_Polygon>.unmodifiable(polygons),
       rings: List<_Ring>.unmodifiable(rings),
       pointLongitudes: decodedPoints.longitudes,
@@ -344,28 +360,41 @@ final class _CountryDataParser {
     );
   }
 
-  List<String> _parseCodes(int offset, int count) {
-    final codes = <String>[];
+  ({List<String> alpha2, List<String> alpha3}) _parseCodes(
+      int offset, int count) {
+    final alpha2 = <String>[];
+    final alpha3 = <String>[];
     String? previous;
     for (var index = 0; index < count; index += 1) {
-      final first = bytes[offset + index * 2];
-      final second = bytes[offset + index * 2 + 1];
-      if (first < 65 || first > 90 || second < 65 || second > 90) {
-        _invalid('Country boundary code table contains non-uppercase ASCII',
-            offset + index * 2);
+      final recordOffset = offset + index * 5;
+      for (var byte = recordOffset; byte < recordOffset + 5; byte += 1) {
+        if (bytes[byte] < 65 || bytes[byte] > 90) {
+          _invalid(
+              'Country boundary code table contains non-uppercase ASCII', byte);
+        }
       }
-      final code = String.fromCharCodes(<int>[first, second]);
-      if (!isOfficialAlpha2(code)) {
+      final code = String.fromCharCodes(bytes, recordOffset, recordOffset + 2);
+      final threeLetterCode =
+          String.fromCharCodes(bytes, recordOffset + 2, recordOffset + 5);
+      final officialAlpha3 = officialAlpha3For(code);
+      if (officialAlpha3 == null) {
+        _invalid('Country boundary code table contains non-official code $code',
+            recordOffset);
+      }
+      if (officialAlpha3 != threeLetterCode) {
         _invalid(
-            'Country boundary code table contains non-official code $code');
+            'Country boundary code table has an invalid Alpha-3 pairing '
+            'for $code',
+            recordOffset + 2);
       }
       if (previous != null && previous.compareTo(code) >= 0) {
         _invalid('Country boundary code table is not strictly sorted');
       }
-      codes.add(code);
+      alpha2.add(code);
+      alpha3.add(threeLetterCode);
       previous = code;
     }
-    return codes;
+    return (alpha2: alpha2, alpha3: alpha3);
   }
 
   List<_RawPolygon> _parsePolygons(
@@ -704,6 +733,7 @@ final class _CountryDataParser {
     required int scale,
     required int gridCells,
     required List<String> codes,
+    required List<String> alpha3Codes,
     required int polygonCount,
     required int ringCount,
     required int pointCount,
@@ -733,6 +763,12 @@ final class _CountryDataParser {
         metadataCodes.length != codes.length ||
         !_sameCodes(metadataCodes, codes)) {
       _invalid('Country boundary metadata code list does not match');
+    }
+    final metadataAlpha3Codes = decoded['alpha3_codes'];
+    if (metadataAlpha3Codes is! List<Object?> ||
+        metadataAlpha3Codes.length != alpha3Codes.length ||
+        !_sameCodes(metadataAlpha3Codes, alpha3Codes)) {
+      _invalid('Country boundary metadata Alpha-3 code list does not match');
     }
     final counts = decoded['counts'];
     if (counts is! Map<String, Object?> ||
