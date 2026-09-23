@@ -26,6 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = ROOT / "tool" / "data" / "sources.json"
 DEFAULT_OUTPUT = ROOT / "assets" / "country_boundaries.bin"
 DEFAULT_METADATA = ROOT / "assets" / "country_boundaries.metadata.json"
+DEFAULT_OFFICIAL_CODES = ROOT / "lib" / "src" / "official_codes.dart"
 MAGIC = b"CCLOCATR"
 HEADER_LENGTH = 80
 POLYGON_RECORD_LENGTH = 28
@@ -70,27 +71,30 @@ def _download(url: str, destination: Path) -> None:
     os.replace(temporary_path, destination)
 
 
-def _load_allowlist(config: dict[str, object]) -> tuple[list[str], bytes]:
+def _load_codes(config: dict[str, object]) -> tuple[dict[str, str], bytes]:
     iso = config["iso_3166_1"]
     assert isinstance(iso, dict)
-    path = _resolve(str(iso["alpha2_allowlist"]))
-    data = path.read_bytes()
+    data = _resolve(str(iso["codes_file"])).read_bytes()
     actual_hash = _sha256(data)
     if actual_hash != iso["sha256"]:
         raise GenerationError(
-            f"ISO allowlist checksum mismatch: expected {iso['sha256']}, "
+            f"ISO code mapping checksum mismatch: expected {iso['sha256']}, "
             f"got {actual_hash}"
         )
-    codes = data.decode("ascii").splitlines()
-    if codes != sorted(set(codes)):
-        raise GenerationError("ISO allowlist must be sorted and contain no duplicates")
-    if len(codes) != iso["count"]:
+    if re.fullmatch(rb"(?:[A-Z]{2} [A-Z]{3}\n)*", data) is None:
+        raise GenerationError("ISO code mapping must contain canonical AA AAA lines")
+    pairs = [line.split(" ") for line in data.decode("ascii").splitlines()]
+    alpha2 = [pair[0] for pair in pairs]
+    alpha3 = [pair[1] for pair in pairs]
+    if alpha2 != sorted(set(alpha2)):
+        raise GenerationError("ISO Alpha-2 codes must be sorted and unique")
+    if len(set(alpha3)) != len(alpha3):
+        raise GenerationError("ISO Alpha-3 codes must be unique")
+    if len(pairs) != iso["count"]:
         raise GenerationError(
-            f"ISO allowlist count mismatch: expected {iso['count']}, got {len(codes)}"
+            f"ISO code mapping count mismatch: expected {iso['count']}, got {len(pairs)}"
         )
-    if any(re.fullmatch(r"[A-Z]{2}", code) is None for code in codes):
-        raise GenerationError("ISO allowlist contains an invalid Alpha-2 code")
-    return codes, data
+    return dict(pairs), data
 
 
 def _load_source(config: dict[str, object], override: Path | None) -> bytes:
@@ -461,7 +465,8 @@ def _pack_asset(
     config: dict[str, object],
     statistics: dict[str, int],
     source_bytes: bytes,
-    allowlist_bytes: bytes,
+    code_mapping: dict[str, str],
+    mapping_bytes: bytes,
 ) -> tuple[bytes, dict[str, object]]:
     scale = int(config["quantization_scale"])
     cell_degrees = int(config["grid_cell_degrees"])
@@ -473,7 +478,10 @@ def _pack_asset(
         {str(polygon["code"]) for polygon in polygons if polygon["code"] is not None}
     )
     code_indexes = {code: index for index, code in enumerate(used_codes)}
-    code_section = "".join(used_codes).encode("ascii")
+    alpha3_codes = [code_mapping[code] for code in used_codes]
+    code_section = "".join(
+        alpha2 + alpha3 for alpha2, alpha3 in zip(used_codes, alpha3_codes)
+    ).encode("ascii")
 
     point_section = bytearray()
     ring_records: list[tuple[int, int, int, int, int, int]] = []
@@ -560,6 +568,7 @@ def _pack_asset(
     assert isinstance(iso, dict)
     metadata: dict[str, object] = {
         "binary_format_version": format_version,
+        "alpha3_codes": alpha3_codes,
         "codes": used_codes,
         "counts": {
             **statistics,
@@ -578,10 +587,12 @@ def _pack_asset(
             "width": width,
         },
         "iso_3166_1": {
-            "allowlist_count": iso["count"],
-            "allowlist_sha256": _sha256(allowlist_bytes),
-            "snapshot_date": iso["snapshot_date"],
+            "codes_count": iso["count"],
+            "codes_sha256": _sha256(mapping_bytes),
+            "source_commit": iso["source_commit"],
+            "source_sha256": iso["source_sha256"],
             "source_url": iso["source_url"],
+            "source_version": iso["source_version"],
         },
         "natural_earth": {
             "code_field": natural_earth["code_field"],
@@ -647,8 +658,8 @@ def _pack_asset(
 
 def _generate(
     config: dict[str, object], source_path: Path | None
-) -> tuple[bytes, dict[str, object]]:
-    allowlist, allowlist_bytes = _load_allowlist(config)
+) -> tuple[bytes, dict[str, object], dict[str, str]]:
+    code_mapping, mapping_bytes = _load_codes(config)
     source_bytes = _load_source(config, source_path)
     natural_earth = config["natural_earth"]
     assert isinstance(natural_earth, dict)
@@ -675,27 +686,42 @@ def _generate(
     polygons, statistics = _build_polygons(
         shape_records,
         attributes,
-        set(allowlist),
+        set(code_mapping),
         str(natural_earth["code_field"]),
         scale,
     )
     cells = _grid_index(
         polygons, scale, int(config["grid_cell_degrees"])
     )
-    return _pack_asset(
+    asset, metadata = _pack_asset(
         polygons,
         cells,
         config,
         statistics,
         source_bytes,
-        allowlist_bytes,
+        code_mapping,
+        mapping_bytes,
     )
+    return asset, metadata, code_mapping
 
 
 def _metadata_bytes(metadata: dict[str, object]) -> bytes:
     return (
         json.dumps(metadata, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
     ).encode("utf-8")
+
+
+def _official_codes_bytes(code_mapping: dict[str, str]) -> bytes:
+    lines = [
+        "// Generated by tool/generate_boundaries.py from the pinned ISO code mapping.",
+        "// Do not edit by hand.",
+        "String? officialAlpha3For(String alpha2) => switch (alpha2) {",
+    ]
+    lines.extend(
+        f"      '{alpha2}' => '{alpha3}'," for alpha2, alpha3 in code_mapping.items()
+    )
+    lines.extend(("      _ => null,", "    };", ""))
+    return "\n".join(lines).encode("ascii")
 
 
 def _write_atomic(path: Path, data: bytes) -> None:
@@ -738,6 +764,7 @@ def main() -> int:
     parser.add_argument("--source", type=Path, help="Pinned source archive override")
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--metadata", type=Path, default=DEFAULT_METADATA)
+    parser.add_argument("--official-codes", type=Path, default=DEFAULT_OFFICIAL_CODES)
     parser.add_argument(
         "--check",
         action="store_true",
@@ -746,8 +773,9 @@ def main() -> int:
     arguments = parser.parse_args()
     config = _read_config()
     source_path = arguments.source.resolve() if arguments.source else None
-    asset, metadata = _generate(config, source_path)
+    asset, metadata, code_mapping = _generate(config, source_path)
     metadata_data = _metadata_bytes(metadata)
+    official_codes_data = _official_codes_bytes(code_mapping)
 
     if arguments.check:
         failures = []
@@ -758,6 +786,11 @@ def main() -> int:
             or arguments.metadata.read_bytes() != metadata_data
         ):
             failures.append(str(arguments.metadata))
+        if (
+            not arguments.official_codes.exists()
+            or arguments.official_codes.read_bytes() != official_codes_data
+        ):
+            failures.append(str(arguments.official_codes))
         if failures:
             raise GenerationError(
                 "Generated output differs from committed files: " + ", ".join(failures)
@@ -777,6 +810,7 @@ def main() -> int:
     _print_difference(previous, metadata)
     _write_atomic(arguments.output, asset)
     _write_atomic(arguments.metadata, metadata_data)
+    _write_atomic(arguments.official_codes, official_codes_data)
     print(
         f"Wrote {arguments.output}: {len(asset)} bytes, "
         f"SHA-256 {metadata['asset_sha256']}"

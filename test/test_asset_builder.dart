@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 
 import 'package:country_code_locator/src/crc32.dart';
+import 'package:country_code_locator/src/official_codes.dart';
 
 const int _scale = 1000;
 const int _gridWidth = 180;
@@ -90,7 +91,15 @@ Uint8List buildTestAsset(List<TestPolygon> inputPolygons) {
     );
   }
 
-  final codeSection = ascii.encode(codes.join());
+  final alpha3Codes = <String>[
+    for (final code in codes) officialAlpha3For(code)!,
+  ];
+  final codeSection = ascii.encode(
+    [
+      for (var index = 0; index < codes.length; index += 1)
+        '${codes[index]}${alpha3Codes[index]}'
+    ].join(),
+  );
   final polygonSection = BytesBuilder(copy: false);
   for (final polygon in polygons) {
     final record = ByteData(28)
@@ -165,8 +174,9 @@ Uint8List buildTestAsset(List<TestPolygon> inputPolygons) {
 
   final metadata = utf8.encode(
     jsonEncode(<String, Object?>{
-      'binary_format_version': 1,
+      'binary_format_version': 2,
       'codes': codes,
+      'alpha3_codes': alpha3Codes,
       'counts': <String, Object?>{
         'asset_codes': codes.length,
         'grid_cells': _gridWidth * _gridHeight,
@@ -204,7 +214,7 @@ Uint8List buildTestAsset(List<TestPolygon> inputPolygons) {
   final header = ByteData(_headerLength);
   header.buffer.asUint8List().setAll(0, ascii.encode('CCLOCATR'));
   header
-    ..setUint16(8, 1, Endian.little)
+    ..setUint16(8, 2, Endian.little)
     ..setUint16(10, _headerLength, Endian.little)
     ..setUint32(12, totalLength, Endian.little)
     ..setUint32(16, checksum, Endian.little)

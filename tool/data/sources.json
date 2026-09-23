@@ -1,13 +1,15 @@
 {
-  "format_version": 1,
-  "generator_version": "1.0.0",
+  "format_version": 2,
+  "generator_version": "2.0.0",
   "grid_cell_degrees": 2,
   "iso_3166_1": {
-    "alpha2_allowlist": "tool/data/iso_3166_1_alpha2.txt",
+    "codes_file": "tool/data/iso_3166_1_codes.txt",
     "count": 249,
-    "sha256": "801ef127f0b3e6b4e971c239c9b8475caedb65c17573d84ca1b57eed72523a0e",
-    "snapshot_date": "2026-09-23",
-    "source_url": "https://www.iso.org/obp/ui/#search/code/"
+    "sha256": "e0b1ba597ec82374406bbc87db49ced745b77d1a893c482a1741253e470fd3c2",
+    "source_commit": "4ba3951667c2ed98363a3640c9022cf1b7a59300",
+    "source_sha256": "f01b812b57fba9f31ff621bf33e7c7570a01964dbeb5be2167e94decf538c89f",
+    "source_url": "https://raw.githubusercontent.com/pycountry/pycountry/4ba3951667c2ed98363a3640c9022cf1b7a59300/src/pycountry/databases/iso3166-1.json",
+    "source_version": "pycountry 26.2.16"
   },
   "natural_earth": {
     "archive": "tool/cache/ne_10m_admin_0_map_units_5.1.1.zip",

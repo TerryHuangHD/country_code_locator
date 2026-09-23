@@ -37,16 +37,71 @@ void main() {
       });
     }
 
+    test('selects official Alpha-3 while keeping Alpha-2 as the default', () {
+      const cases = <({
+        double latitude,
+        double longitude,
+        String alpha2,
+        String alpha3,
+      })>[
+        (latitude: 35.6812, longitude: 139.7671, alpha2: 'JP', alpha3: 'JPN'),
+        (latitude: 40.7128, longitude: -74.0060, alpha2: 'US', alpha3: 'USA'),
+        (latitude: 25.0330, longitude: 121.5654, alpha2: 'TW', alpha3: 'TWN'),
+        (latitude: -18.1416, longitude: 178.4419, alpha2: 'FJ', alpha3: 'FJI'),
+      ];
+      for (final testCase in cases) {
+        expect(
+          locator.lookup(
+            latitude: testCase.latitude,
+            longitude: testCase.longitude,
+          ),
+          testCase.alpha2,
+        );
+        expect(
+          locator.lookup(
+            latitude: testCase.latitude,
+            longitude: testCase.longitude,
+            format: CountryCodeFormat.alpha3,
+          ),
+          testCase.alpha3,
+        );
+      }
+    });
+
     test('returns null for open ocean', () {
       expect(locator.lookup(latitude: 0, longitude: -140), isNull);
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: -140,
+          format: CountryCodeFormat.alpha3,
+        ),
+        isNull,
+      );
     });
 
     test('returns null for Kosovo because XK is not officially assigned', () {
       expect(locator.lookup(latitude: 42.6629, longitude: 21.1655), isNull);
+      expect(
+        locator.lookup(
+          latitude: 42.6629,
+          longitude: 21.1655,
+          format: CountryCodeFormat.alpha3,
+        ),
+        isNull,
+      );
     });
 
     test('returns null for an uncoded Natural Earth map unit', () {
       expect(locator.lookup(latitude: 35.25, longitude: 33.6), isNull);
+      expect(
+        locator.lookup(
+          latitude: 35.25,
+          longitude: 33.6,
+          format: CountryCodeFormat.alpha3,
+        ),
+        isNull,
+      );
     });
 
     test('treats -180 and 180 as the same meridian', () {

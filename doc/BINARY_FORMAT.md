@@ -1,6 +1,6 @@
 # Country boundary binary format
 
-Format version `1` is a little-endian, self-validating container optimized for
+Format version `2` is a little-endian, self-validating container optimized for
 one-time loading and repeated synchronous lookup. All offsets are absolute byte
 offsets from the beginning of the file. Integers are unsigned unless marked
 signed.
@@ -12,7 +12,7 @@ The fixed header is 80 bytes.
 | Offset | Type | Meaning |
 | ---: | --- | --- |
 | 0 | 8 bytes | ASCII magic `CCLOCATR` |
-| 8 | `u16` | Format version (`1`) |
+| 8 | `u16` | Format version (`2`) |
 | 10 | `u16` | Header length (`80`) |
 | 12 | `u32` | Total file length |
 | 16 | `u32` | CRC-32/ISO-HDLC of bytes `[80, total length)` |
@@ -41,8 +41,10 @@ index, invalid ring, or out-of-range coordinate.
 
 ## Code table
 
-Codes are sorted and stored as two uppercase ASCII bytes each. Only codes in
-the pinned ISO 3166-1 allowlist may appear.
+Code records are sorted by Alpha-2 and stored as five uppercase ASCII bytes
+each: two Alpha-2 bytes followed by their corresponding three Alpha-3 bytes.
+Both codes and the exact pair must appear in the pinned ISO 3166-1 mapping;
+the runtime rejects mismatches even when both individual codes are official.
 
 ## Polygon table
 
@@ -87,7 +89,8 @@ return `null`.
 ## Metadata
 
 The final section is canonical UTF-8 JSON (`sort_keys=true`, compact
-separators). It records source URL/version/SHA-256, allowlist provenance and
+separators). It records source URL/version/SHA-256, mapping provenance and
 SHA-256, generator version, format version, quantization, simplification,
-counts, and a SHA-256 digest of the non-metadata payload. The deterministic
-sidecar metadata file additionally records the completed asset's SHA-256.
+counts, parallel Alpha-2 `codes` and `alpha3_codes` arrays, and a SHA-256 digest
+of the non-metadata payload. The deterministic sidecar metadata file
+additionally records the completed asset's SHA-256.

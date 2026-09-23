@@ -35,6 +35,12 @@ void main() {
         longitude: coordinate.longitude,
       );
       checksum ^= code?.codeUnitAt(0) ?? 0;
+      final alpha3 = locator.lookup(
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        format: CountryCodeFormat.alpha3,
+      );
+      checksum ^= alpha3?.codeUnitAt(2) ?? 0;
     }
 
     const iterations = 250000;
@@ -48,6 +54,17 @@ void main() {
       checksum ^= code?.codeUnitAt(1) ?? 0;
     }
     lookupWatch.stop();
+    final alpha3Watch = Stopwatch()..start();
+    for (var index = 0; index < iterations; index += 1) {
+      final coordinate = coordinates[index % coordinates.length];
+      final code = locator.lookup(
+        latitude: coordinate.latitude,
+        longitude: coordinate.longitude,
+        format: CountryCodeFormat.alpha3,
+      );
+      checksum ^= code?.codeUnitAt(2) ?? 0;
+    }
+    alpha3Watch.stop();
 
     final result = <String, Object>{
       'asset_bytes': asset.lengthInBytes,
@@ -57,8 +74,10 @@ void main() {
       'max_rss_delta_bytes': maxRssAfterLoad - maxRssBefore,
       'process_rss_after_load_bytes': rssAfterLoad,
       'process_rss_delta_bytes': rssAfterLoad - rssBefore,
-      'warm_lookup_nanoseconds_average':
+      'warm_alpha2_lookup_nanoseconds_average':
           lookupWatch.elapsedMicroseconds * 1000 / iterations,
+      'warm_alpha3_lookup_nanoseconds_average':
+          alpha3Watch.elapsedMicroseconds * 1000 / iterations,
     };
     // One machine-readable line makes device runs easy to archive.
     // ignore: avoid_print

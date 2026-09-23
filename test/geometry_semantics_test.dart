@@ -34,11 +34,27 @@ void main() {
     test('matches an outer-ring interior and a single-code boundary', () {
       expect(locator.lookup(latitude: 8, longitude: 0), 'US');
       expect(locator.lookup(latitude: 0, longitude: -10), 'US');
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: -10,
+          format: CountryCodeFormat.alpha3,
+        ),
+        'USA',
+      );
     });
 
     test('excludes a hole and continues to another candidate', () {
       expect(locator.lookup(latitude: 0, longitude: 2), isNull);
       expect(locator.lookup(latitude: 0, longitude: 0), 'CA');
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: 0,
+          format: CountryCodeFormat.alpha3,
+        ),
+        'CAN',
+      );
     });
 
     test('treats a hole ring as the owning polygon boundary', () {
@@ -48,10 +64,26 @@ void main() {
     test('resolves another polygon with the same code as a MultiPolygon member',
         () {
       expect(locator.lookup(latitude: 0, longitude: 32), 'US');
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: 32,
+          format: CountryCodeFormat.alpha3,
+        ),
+        'USA',
+      );
     });
 
     test('returns null on a shared boundary between different codes', () {
       expect(locator.lookup(latitude: 0, longitude: 10), isNull);
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: 10,
+          format: CountryCodeFormat.alpha3,
+        ),
+        isNull,
+      );
     });
 
     test('uses the asset quantization rule for boundary decisions', () {
@@ -61,6 +93,14 @@ void main() {
 
     test('returns null when uncoded source geometry is hit', () {
       expect(locator.lookup(latitude: 0, longitude: 45), isNull);
+      expect(
+        locator.lookup(
+          latitude: 0,
+          longitude: 45,
+          format: CountryCodeFormat.alpha3,
+        ),
+        isNull,
+      );
     });
   });
 

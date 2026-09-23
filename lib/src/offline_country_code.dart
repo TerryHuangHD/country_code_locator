@@ -13,7 +13,7 @@ final class OfflineCountryCode {
   static const String dataVersion = '5.1.1';
 
   /// Binary container format version understood by this release.
-  static const int binaryFormatVersion = 1;
+  static const int binaryFormatVersion = 2;
 
   /// Flutter asset key used by [load].
   static const String assetKey =
@@ -44,15 +44,25 @@ final class OfflineCountryCode {
     return OfflineCountryCode._(CountryData.parse(bytes));
   }
 
-  /// Returns the officially assigned ISO 3166-1 Alpha-2 code at a coordinate.
+  /// Returns the officially assigned ISO 3166-1 code at a coordinate.
   ///
   /// Returns `null` for ocean, uncovered or uncoded land, and ambiguous shared
   /// boundaries. A point on a boundary belonging to exactly one code matches
   /// that code. `-180` and `180` are the same meridian.
+  /// [format] selects Alpha-2 (the default) or Alpha-3 without changing the
+  /// boundary or ambiguity rules.
   ///
   /// Throws [ArgumentError] when either coordinate is non-finite or outside its
   /// WGS 84 range.
-  String? lookup({required double latitude, required double longitude}) {
-    return _data.lookup(latitude: latitude, longitude: longitude);
+  String? lookup({
+    required double latitude,
+    required double longitude,
+    CountryCodeFormat format = CountryCodeFormat.alpha2,
+  }) {
+    return _data.lookup(
+      latitude: latitude,
+      longitude: longitude,
+      format: format,
+    );
   }
 }
