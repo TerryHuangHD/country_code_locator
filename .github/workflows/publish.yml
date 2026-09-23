@@ -48,4 +48,4 @@ jobs:
         run: python3 tool/generate_boundaries.py --check
 
       - name: Publish
-        run: dart pub publish --force
+        run: flutter pub publish --force

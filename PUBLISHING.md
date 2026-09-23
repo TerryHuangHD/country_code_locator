@@ -6,7 +6,7 @@
 2. Sign in to pub.dev with the Google account that will own the package
    (or transfer it to a verified publisher after publication).
 3. From the repository root, run `flutter pub publish --dry-run`, inspect the
-   file list, then run `dart pub publish` interactively. This first upload
+   file list, then run `flutter pub publish` interactively. This first upload
    creates the package on pub.dev; it cannot be bootstrapped by the tag workflow.
 4. Confirm the package page, API documentation, example, archive contents, and
    repository links. Do **not** push `v1.0.0` afterward: the tag workflow would
@@ -48,7 +48,7 @@ uses pub.dev's short-lived GitHub OIDC credential and stores no publish token.
 6. Commit the release, merge through CI, and create an annotated `vX.Y.Z` tag
    matching `pubspec.yaml` exactly.
 7. Push the tag. `.github/workflows/publish.yml` reruns analysis, tests, and
-   deterministic generation before invoking `dart pub publish --force`.
+   deterministic generation before invoking `flutter pub publish --force`.
 8. Verify the pub.dev package page, API documentation, example, archive
    contents, and repository links.
 
