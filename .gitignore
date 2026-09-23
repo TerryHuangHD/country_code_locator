@@ -1,0 +1,30 @@
+# Dart and Flutter
+.dart_tool/
+.packages
+build/
+coverage/
+.flutter-plugins
+.flutter-plugins-dependencies
+pubspec.lock
+
+# FVM
+.fvm/
+
+# Generated local data cache
+tool/cache/
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Editors
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Local agent guidance
+AGENTS.md
+.agents/

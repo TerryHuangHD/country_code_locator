@@ -1,0 +1,22 @@
+{
+  "format_version": 1,
+  "generator_version": "1.0.0",
+  "grid_cell_degrees": 2,
+  "iso_3166_1": {
+    "alpha2_allowlist": "tool/data/iso_3166_1_alpha2.txt",
+    "count": 249,
+    "sha256": "801ef127f0b3e6b4e971c239c9b8475caedb65c17573d84ca1b57eed72523a0e",
+    "snapshot_date": "2026-09-23",
+    "source_url": "https://www.iso.org/obp/ui/#search/code/"
+  },
+  "natural_earth": {
+    "archive": "tool/cache/ne_10m_admin_0_map_units_5.1.1.zip",
+    "code_field": "ISO_A2_EH",
+    "dataset": "Admin 0 - Map Units",
+    "sha256": "45bebe2aaf8bf42b9daf4428594925bcb11eabd32fe9dc6e0acf681438053eb5",
+    "source_url": "https://naciscdn.org/naturalearth/10m/cultural/ne_10m_admin_0_map_units.zip",
+    "version": "5.1.1"
+  },
+  "quantization_scale": 100000,
+  "simplification": "none"
+}
