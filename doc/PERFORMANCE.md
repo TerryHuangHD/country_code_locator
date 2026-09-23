@@ -1,8 +1,8 @@
 # Performance measurements
 
-The 1.0.0 device run and 1.1.0 development run below are observations, not
-guaranteed thresholds. Compare results only when device, OS, Flutter version,
-build mode, workload, and asset digest are recorded.
+Measurements below record device, OS, Flutter version, build mode, workload,
+and asset digest. They are observations, not guaranteed thresholds; single-run
+results do not establish a speedup or slowdown between releases.
 
 ## 1.0.0 baseline
 
@@ -35,6 +35,33 @@ harness—not only the library. The delta is an approximation of initialization
 cost; allocator behavior and prior high-water marks affect it. Average lookup
 latency includes loop and coordinate-selection overhead and does not describe
 tail latency.
+
+## 1.1.0 physical-device profile
+
+Measured 2026-09-24 on a physical Pixel 10 (`android-arm64`), Android 17
+(API 37), Flutter 3.44.9 / Dart 3.12.2 in profile mode. Version 2 asset
+SHA-256: `8c2c0176d801323386ee9602ac7df1c0a449e4437af338211b6b658d98f84478`.
+
+A temporary Flutter Android app consumed this package from a path dependency.
+It sampled process RSS before and after the first `OfflineCountryCode.load()`,
+warmed up 50,000 lookups per format, then timed 1,000,000 Alpha-2 and
+1,000,000 Alpha-3 lookups separately over four land coordinates, ocean, and
+Kosovo. It was removed after the run.
+
+| Metric | Result |
+| --- | ---: |
+| Asset size | 2,573,123 bytes (2.45 MiB) |
+| Cold `OfflineCountryCode.load()` | 52,019 µs (52.019 ms) |
+| Warm Alpha-2 lookup average | 8,571.313 ns (8.571 µs) |
+| Warm Alpha-3 lookup average | 8,572.846 ns (8.573 µs) |
+| Process RSS after load | 200,589,312 bytes |
+| Process RSS delta across load | 14,045,184 bytes (13.39 MiB) |
+| Process maximum RSS after load | 199,397,376 bytes |
+| Process maximum-RSS delta | 14,024,704 bytes (13.38 MiB) |
+
+This is one process-level run, not a confidence interval or a package-only
+memory measurement. App startup state and allocator behavior affect the RSS
+deltas; no cross-release performance conclusion is implied.
 
 ## 1.1.0 development observation
 

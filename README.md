@@ -108,12 +108,12 @@ The library source is MIT licensed.
 
 ## Performance
 
-The 1.0.0 asset was **2,570,639 bytes (2.45 MiB)**. A 1.0.0 reference
-profile-mode run on a physical Pixel 10 measured 55.345 ms cold load,
-8.875 µs average warm lookup, and a 13.50 MiB process-wide peak-RSS delta.
-These are historical measurements, not 1.1.0 performance claims or service
-level guarantees. Repeat the benchmark for the updated asset before publishing;
-see [PERFORMANCE.md](doc/PERFORMANCE.md).
+The 1.1.0 asset is **2,573,123 bytes (2.45 MiB)**. A profile-mode run on a
+physical Pixel 10 measured 52.019 ms cold load, 8.571 µs average warm Alpha-2
+lookup, 8.573 µs average warm Alpha-3 lookup, and a 13.38 MiB process-wide
+peak-RSS delta. These are single-run measurements, not guaranteed thresholds
+or evidence of improvement over another release; see
+[PERFORMANCE.md](doc/PERFORMANCE.md) for the workload and caveats.
 
 Runtime lookup consults a 2° spatial grid before polygon and ring bounds. It
 does not scan every global polygon, reparse the asset, or copy the geometry per

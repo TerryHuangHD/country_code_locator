@@ -1,4 +1,4 @@
-## 1.1.0 - Unreleased
+## 1.1.0 - 2026-09-24
 
 - Added per-lookup ISO 3166-1 Alpha-2 or Alpha-3 selection; Alpha-2 remains the default.
 - Pinned and validated the official Alpha-2/Alpha-3 mapping in the version 2 boundary asset.
