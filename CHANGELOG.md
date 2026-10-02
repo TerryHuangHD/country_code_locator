@@ -1,3 +1,8 @@
+## 1.1.2 - 2026-10-02
+
+- Named TerryHuangHD as the MIT license copyright holder.
+- Removed the English-precedence notes from the translated READMEs.
+
 ## 1.1.1 - 2026-10-02
 
 - Added Traditional Chinese and Japanese README translations.
