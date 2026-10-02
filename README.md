@@ -1,5 +1,7 @@
 # country_code_locator
 
+**English** | [繁體中文](README.zh-TW.md) | [日本語](README.ja.md)
+
 [![CI](https://github.com/TerryHuangHD/country_code_locator/actions/workflows/ci.yml/badge.svg)](https://github.com/TerryHuangHD/country_code_locator/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
