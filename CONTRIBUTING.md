@@ -6,7 +6,7 @@ binary format, or public API.
 
 ## Setup
 
-The repository pins Flutter 3.44.9 in `.fvmrc`. Use FVM when available:
+The repository pins Flutter 3.47.9 in `.fvmrc`. Use FVM when available:
 
 ```shell
 fvm use
