@@ -1,3 +1,9 @@
+## 1.1.3 - 2026-11-05
+
+- Upgraded the FVM and CI toolchain to Flutter 3.47.9 / Dart 3.13.7.
+- Updated analyzer exclusions for Flutter-generated build output.
+- Recorded a fresh Pixel 10 profile-mode benchmark with the upgraded toolchain.
+
 ## 1.1.2 - 2026-10-02
 
 - Named TerryHuangHD as the MIT license copyright holder.

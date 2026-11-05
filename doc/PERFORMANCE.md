@@ -83,6 +83,32 @@ format over six rotating coordinates:
 The test VM is not a profile-mode mobile device. Do not compare these timings
 to the Android 1.0.0 baseline or claim a speedup from this single run.
 
+## 1.1.3 physical-device profile
+
+Measured 2026-11-05 on a physical Pixel 10 (`android-arm64`), Android 17
+(API 37), Flutter 3.47.9 / Dart 3.13.7 in profile mode. Version 2 asset
+SHA-256: `8c2c0176d801323386ee9602ac7df1c0a449e4437af338211b6b658d98f84478`.
+
+A temporary Flutter Android app consumed version 1.1.3 from a path dependency.
+It used the six coordinates from the committed benchmark, verified the expected
+Alpha-2 and Alpha-3 results, warmed up 50,000 lookups per format, and timed
+1,000,000 lookups per format. RSS was sampled around the first bundled-asset
+load, before warm-up.
+
+| Metric | Result |
+| --- | ---: |
+| Asset size | 2,573,123 bytes (2.45 MiB) |
+| Cold `OfflineCountryCode.load()` | 49,110 µs (49.110 ms) |
+| Warm Alpha-2 lookup average | 8,611.895 ns (8.612 µs) |
+| Warm Alpha-3 lookup average | 8,918.640 ns (8.919 µs) |
+| Process RSS after load | 203,091,968 bytes |
+| Process RSS delta across load | 14,467,072 bytes (13.80 MiB) |
+| Process maximum RSS after load | 201,867,264 bytes |
+| Process maximum-RSS delta | 14,417,920 bytes (13.75 MiB) |
+
+These are single-run process-level measurements, not package-only memory usage,
+guaranteed thresholds, or evidence of a cross-release speedup or slowdown.
+
 ## Development benchmark
 
 The committed benchmark uses the same coordinates for both Alpha-2 and
